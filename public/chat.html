@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    #messages {
+      list-style-type: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    #messages li {
+      margin-bottom: 10px;
+    }
+
+    .sender {
+      font-weight: bold;
+    }
+
+    .timestamp {
+      font-size: 0.8em;
+      color: grey;
+    }
+
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 400px;
+    }
+
+    #message-input {
+      margin-top: 10px;
+      height: 30px;
+      width: 100%;
+    }
+
+    #send-button {
+      margin-top: 10px;
+      padding: 10px;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Real-time Chat with Admin</h1>
+
+  <!-- Chat UI -->
+  <div id="chat-container">
+    <ul id="messages"></ul>
+    <input type="text" id="message-input" placeholder="Type a message...">
+    <button id="send-button" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    // Extract roomId from the URL (when user clicks the email link)
+    const roomId = window.location.pathname.split('/')[2]; // Chat link contains the roomId
+
+    const socket = io("http://localhost:3000");
+
+    // Join the chat room
+    socket.emit('join-room', { roomId });
+
+    // Listen for incoming messages
+    socket.on('receive-message', (data) => {
+      const { message, sender, timestamp } = data;
+      const messageElement = document.createElement("li");
+      messageElement.innerHTML = `
+        <span class="sender">${sender}:</span> ${message} 
+        <span class="timestamp">${timestamp}</span>
+      `;
+      document.getElementById("messages").appendChild(messageElement);
+    });
+
+    // Send a message to the server
+    function sendMessage() {
+      const message = document.getElementById("message-input").value;
+      if (message.trim() !== "") {
+        // Emit the message to the server
+        socket.emit('send-message', {
+          roomId: roomId,
+          message: message,
+          sender: "User", // Change "User" to something dynamic if needed
+        });
+
+        // Display message locally
+        const messageElement = document.createElement("li");
+        messageElement.innerHTML = `
+          <span class="sender">You:</span> ${message} 
+          <span class="timestamp">${new Date().toISOString()}</span>
+        `;
+        document.getElementById("messages").appendChild(messageElement);
+
+        document.getElementById("message-input").value = ""; // Clear input field
+      }
+    }
+  </script>
+</body>
+</html>
